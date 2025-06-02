@@ -4,8 +4,68 @@ from dotenv import load_dotenv
 from sklearn.metrics import accuracy_score
 import json
 import os
+import re
 
 load_dotenv()
+
+def preprocess_VLSP(input_path="data/VLSP/train.csv", 
+                    output_path="data/VLSP/PP-train.csv",
+                    data="texts", 
+                    label="labels"):
+    """
+    Preprocesses text data from a CSV file for sentiment analysis,
+    specifically tailored for VLSP-like datasets.
+
+    The function performs the following steps:
+    1. Reads the CSV file into a pandas DataFrame.
+    2. Selects and renames the specified data and label columns to 'data' and 'label'.
+    3. Strips leading/trailing double quotes from the 'data' column.
+    4. Removes rows with missing or empty data in the 'data' column.
+    5. Maps string labels ('POS', 'NEU', 'NEG') to numerical values (0, 1, 2) in the 'label' column.
+    6. Removes a predefined set of Vietnamese stop words from the 'data' column.
+    7. Converts text in the 'data' column to lowercase.
+    8. Removes URLs and HTML tags from the 'data' column.
+    9. Removes characters not belonging to the Vietnamese alphabet (including accented characters),
+       digits (0-9), basic punctuation (.,!?\'\"), or whitespace from the 'data' column.
+    10. Removes extra whitespace from the 'data' column (multiple spaces to single, strips ends).
+    11. Removes the Unicode replacement character '�' from the 'data' column.
+    12. Ensures all entries in the 'data' column are explicitly cast to strings.
+    13. Saves the preprocessed DataFrame to the specified output CSV file.
+
+    Args:
+        input_path (str): The file path to the CSV data.
+        output_path (str): The file path to the resulting CSV data.
+        data (str): The name of the column containing the text data.
+        label (str): The name of the column containing the labels.
+
+    Returns:
+        pandas.DataFrame: A DataFrame with preprocessed 'data' and 'label' columns.
+                          The 'data' column contains the cleaned and lemmatized text.
+    """
+    df = pd.read_csv(input_path)
+
+    df = df[[data, label]].rename(columns={data: 'data', label: 'label'})
+
+    df['data'] = df['data'].str.strip('"')
+    df = df[df['data'].notna() & (df['data'] != "")]
+
+    df['label'] = df['label'].map({'POS': 0, 'NEU': 1, 'NEG': 2})
+
+    stop_words = set(['không', 'là', 'và', 'của', 'được', 'có', 'một', 'trong', 'để', 'cho', 'này', 'cũng', 'như', 'với'])
+    df['data'] = df['data'].apply(lambda data: ' '.join([word for word in data.split() if word not in stop_words]))
+
+    df['data'] = df['data'] \
+                .map(lambda data: data.lower()) \
+                .map(lambda data: re.sub(r'http\S+|www\S+|https\S+', '', data, flags=re.MULTILINE)) \
+                .map(lambda data: re.sub(r'<.*?>', '', data)) \
+                .map(lambda data: re.sub(r'[^a-záàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ0-9\s.,!?\'"]', '', data)) \
+                .map(lambda data: re.sub(r'\s+', ' ', data).strip()) 
+    
+    df['data'] = df['data'].str.replace('﻿', '', regex=False)
+    df['data'] = df['data'].map(lambda data: str(data))
+
+    df.to_csv(output_path, index=False)
+    return df
 
 def soft_preprocess_df(df, data="Summary", label="Sentiment"):
     df = df[[data, label]].rename(columns={data: 'data', label: 'label'})
