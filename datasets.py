@@ -23,7 +23,7 @@ class CustomTextDataset(Dataset):
         text = self.texts[idx]
         label = self.labels[idx]
         if (type(text) != str):
-            print(text)
+            print("text is not string", idx, str(text), label)
         # Tokenize the text
         encoded = self.tokenizer(
             text,

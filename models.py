@@ -19,16 +19,16 @@ class CustomBERTModel:
                      out_channels: int):
             super().__init__()
             self.bert = BertModel.from_pretrained(model_name, output_hidden_states=True)
-            self.fc1 = _nn.Linear(768*3, 500)  
-            self.fc2 = _nn.Linear(500, 250) 
-            self.fc3 = _nn.Linear(250, out_channels) 
+            self.fc1 = _nn.Linear(768*5, 512)  
+            self.fc2 = _nn.Linear(512, 256) 
+            self.fc3 = _nn.Linear(256, out_channels) 
             self.relu = _nn.ReLU()
             self.dropout = _nn.Dropout(0) 
 
         def forward(self, input_ids, attention_mask):
             # Pass inputs through BERT
             outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-            cls_embeddings = torch.cat([state[:, 0, :] for state in outputs.hidden_states[-3:]], dim=1)
+            cls_embeddings = torch.cat([state[:, 0, :] for state in outputs.hidden_states[-5:]], dim=1)
             
             # Pass through fully connected layers
             x = self.dropout(self.relu(self.fc1(cls_embeddings)))
@@ -36,7 +36,7 @@ class CustomBERTModel:
             logits = self.fc3(x)
             return logits
 
-    def __init__(self, model_name="google-bert/bert-base-multilingual-cased", num_labels=2, device="cuda:1"):
+    def __init__(self, model_name="google-bert/bert-base-multilingual-cased", num_labels=3, device="cuda:1"):
         """Initialize the BERT model for classification.
 
         Args:
@@ -47,7 +47,7 @@ class CustomBERTModel:
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         self.device = device
 
-    def train(self, train_dataloader, val_dataloader, epochs=10, learning_rate=1e-3):
+    def train(self, train_dataloader, val_dataloader, epochs=10, learning_rate=1e-3, use_scheduler=True):
         """Train the BERT model.
 
         Args:
@@ -80,7 +80,8 @@ class CustomBERTModel:
 
                 total_loss += loss.item()
 
-            scheduler.step()
+            if use_scheduler:
+                scheduler.step()
             avg_train_loss = total_loss / len(train_dataloader)
             print(f"Epoch {epoch + 1}/{epochs}, Training Loss: {avg_train_loss:.4f}")
 
@@ -154,7 +155,7 @@ class CustomBERTModel:
         Args:
             save_path (str): Path to save the model.
         """
-        torch.save(self.model, save_path+".pth")
+        torch.save(self.model.state_dict(), save_path+".pth")
 
         print(f"Model saved to {save_path}")
 
@@ -164,5 +165,5 @@ class CustomBERTModel:
         Args:
             load_path (str): Path to load the model from.
         """
-        self.model = torch.load(load_path+".pth")
+        self.model = torch.load(load_path+".pth", weights_only=True)
         print(f"Model loaded from {load_path}")

@@ -30,7 +30,13 @@ def train_model_with_dataset(model_name="bert-base-multilingual-cased",
                              data_path="", 
                              model_path="",
                              checkpoint_path="models/AIVIVN_2019_model",
-                             batch_size=4, device="cpu"):
+                             batch_size=4, 
+                             validation_size=0.005,
+                             epoch=10,
+                             learning_rate=3e-5,
+                             use_scheduler=True,
+                             num_workers=4,
+                             device="cpu"):
     """Train a model using a dataset.
 
     Args:
@@ -47,7 +53,7 @@ def train_model_with_dataset(model_name="bert-base-multilingual-cased",
     train_texts, val_texts, train_labels, val_labels = train_test_split(
         train_data['data'].tolist(),
         train_data['label'].tolist(),
-        test_size=0.005,
+        test_size=validation_size,
         random_state=42
     )
 
@@ -58,10 +64,10 @@ def train_model_with_dataset(model_name="bert-base-multilingual-cased",
     train_dataset = CustomTextDataset(texts=train_texts, labels=train_labels, tokenizer=model.tokenizer)
     val_dataset = CustomTextDataset(texts=val_texts, labels=val_labels, tokenizer=model.tokenizer)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
-    model.train(train_dataloader, val_dataloader, epochs=10, learning_rate=3e-5)
+    model.train(train_dataloader, val_dataloader, epochs=epoch, learning_rate=learning_rate, use_scheduler=use_scheduler)
 
     new_text = "This is an amazing example."
     prediction = model.predict(new_text)
