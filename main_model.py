@@ -21,7 +21,7 @@ def main(args):
         print("Training model {} on dataset {}".format(args.model_name, args.data_path))
     elif args.action == 'inference':
         model = CustomBERTModel(device=args.device)
-        model.load_model(args.inference_model)
+        model.load_model(args.model_path)
 
         prediction = model.predict(args.inference_text)
 
@@ -37,23 +37,22 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Synthetic Data Impacts")
 
-    parser.add_argument('--action', type=str, default='train', choices=['train', 'inference', 'test', 'data'], help='Action to perform: train or inference or validation')
+    parser.add_argument('--action', type=str, default='train', choices=['train', 'inference', 'test'], help='Action to perform: train or inference or validation')
     
     # For Training
-    parser.add_argument('--data_path', type=str, default='Experiment_data/Evaluation_dataset/AIVIVN.csv', help='Directory to load data')
-    parser.add_argument('--model_name', type=str, default='mBERT', help='Name of the model')
+    parser.add_argument('--data_path', type=str, default='', help='Directory to load data')
+    parser.add_argument('--model_name', type=str, default='mBert', help='Name of the model')
     parser.add_argument('--model_path', type=str, default='', help='Directory to load trained model')
-    parser.add_argument('--checkpoint_path', type=str, default='models/default_model', help='Directory to save trained model')
+    parser.add_argument('--checkpoint_path', type=str, default='', help='Directory to save trained model')
 
     # For Inference
-    parser.add_argument('--inference_model', type=str, default="models/bert-base-multilingual-cased_AIVIVN_2019", help='Inference Text')
     parser.add_argument('--inference_text', type=str, default='sản phẩm bị lỗi', help='Inference Text')
 
     # Details
     parser.add_argument('--device', type=str, default="cuda:0")
     parser.add_argument('--batch_size', type=int, default="128")
     parser.add_argument('--validation_size', type=float, default="0.05")
-    parser.add_argument('--epoch', type=int, default="1")
+    parser.add_argument('--epoch', type=int, default="10")
     parser.add_argument('--learning_rate', type=float, default="3e-5")
     parser.add_argument('--use_scheduler', type=int, default="1")
     parser.add_argument('--num_workers', type=int, default="32")
