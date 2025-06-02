@@ -19,7 +19,6 @@ python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpo
 ```
 
 ```bash
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP
 python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch10_schedulerTrue_nw32
 python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch5_schedulerTrue_nw32
 python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch4_schedulerTrue_nw32

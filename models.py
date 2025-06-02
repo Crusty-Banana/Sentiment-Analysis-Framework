@@ -165,5 +165,5 @@ class CustomBERTModel:
         Args:
             load_path (str): Path to load the model from.
         """
-        self.model = torch.load(load_path+".pth", weights_only=True)
+        self.model.load_state_dict(torch.load(load_path+".pth", weights_only=True))
         print(f"Model loaded from {load_path}")
