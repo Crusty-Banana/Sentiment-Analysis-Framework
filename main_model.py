@@ -4,7 +4,7 @@ from models import CustomBERTModel
 
 def main(args):
     if args.action == 'train':
-        checkpoint_path = args.checkpoint_path \
+        checkpoint_path = args.checkpoint_path + "_" + args.model_name \
                         + '_lr' + str(args.learning_rate) + '_bs' + str(args.batch_size) + '_epoch' + str(args.epoch) \
                         + '_scheduler' + str(args.use_scheduler) + '_nw' + str(args.num_workers)
         train_model_with_dataset(model_name=args.model_name, 

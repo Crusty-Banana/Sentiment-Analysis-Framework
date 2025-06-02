@@ -47,8 +47,8 @@ def preprocess_VLSP(input_path="data/VLSP/train.csv",
 
     df['label'] = df['label'].map({'POS': 0, 'NEU': 1, 'NEG': 2})
 
-    stop_words = set(['không', 'là', 'và', 'của', 'được', 'có', 'một', 'trong', 'để', 'cho', 'này', 'cũng', 'như', 'với'])
-    df['data'] = df['data'].apply(lambda data: ' '.join([word for word in data.split() if word not in stop_words]))
+    # stop_words = set(['không', 'là', 'và', 'của', 'được', 'có', 'một', 'trong', 'để', 'cho', 'này', 'cũng', 'như', 'với'])
+    # df['data'] = df['data'].apply(lambda data: ' '.join([word for word in data.split() if word not in stop_words]))
 
     df['data'] = df['data'] \
                 .map(lambda data: data.lower()) \

@@ -9,7 +9,15 @@ python main_data.py --action preprocess_VLSP --data texts --label labels --input
 ```
 
 ```bash
+python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 20
+
 python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 10
+
+python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 5
+
+python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 4
+
+python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 20 --use_scheduler 0
 
 python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 10 --use_scheduler 0
 
@@ -19,8 +27,8 @@ python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpo
 ```
 
 ```bash
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch10_schedulerTrue_nw32
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch5_schedulerTrue_nw32
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch4_schedulerTrue_nw32
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs256_epoch4_schedulerTrue_nw32
+python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch10_scheduler1_nw32
+python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch10_scheduler0_nw32
+python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch5_scheduler0_nw32
+python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_lr3e-05_bs128_epoch4_scheduler0_nw32
 ```
