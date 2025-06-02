@@ -1,0 +1,5 @@
+NLPvenv
+.env
+__pycache__
+models
+data

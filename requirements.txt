@@ -1,0 +1,14 @@
+# torch using cuda 12
+# torch==2.5.1+cu121
+# torchaudio==2.5.1+cu121
+# torchvision==0.20.1+cu121
+
+datasets==3.6.0
+pandas==2.2.3
+notebook==7.4.3
+ipykernel==6.29.5
+scikit-learn==1.6.1
+openai==1.82.1
+python-dotenv==1.1.0
+transformers==4.52.4
+numpy==2.1.2
