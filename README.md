@@ -1,3 +1,4 @@
+# Data Manipulation Tools
 ## Preprocess VLSP data
 
 ```bash
@@ -18,10 +19,17 @@ python main_data.py --action split --input_path data/Amazon/PP-train.csv --outpu
 Manually send to OpenAI batch interface.
 
 ```bash
-python main_data.py --action combine --original_csv_path data/Amazon/PP-train.csv --input_path data/Amazon/Split-train --output_path data/Amazon/PP-translated-train.csv
+python main_data.py --action combine --original_csv_path data/Amazon/PP-train.csv --input_path data/Amazon/Split-train --output_path data/Amazon/translated-PP-train.csv
+```
+## Other tools
+
+```bash
+python main_data.py --action undersampling --input_path data/Amazon/PP-train.csv --output_path data/Amazon/undersampled-PP-train.csv
+
 ```
 
-## train/ test/ inference/
+
+## train/test/inference
 
 ```bash
 python main_model.py --action train --data_path data/amaz/PP-train.csv --checkpoint_path models/VLSP --epoch 20
@@ -74,5 +82,4 @@ Given Dataset X, Y, Z,... How can we fine tune a models
 - Calculate metrics when testing on VLSP test set.
 
 # TO CODE:
-- Undersampling, SMOTE
-- Evaluation
+- More detailed Evaluation

@@ -205,3 +205,15 @@ def balance_the_data(data_path, output_path):
     df = df.sample(frac=1)
 
     df.to_csv(output_path)
+
+def under_sample_data(input_path, output_path):
+    df = pd.read_csv(input_path, index_col=0)
+    count_neg, count_neu, count_pos = df['label'].value_counts().sort_index()
+    min_count = min(count_neg, count_neu, count_pos)
+
+    df_neg_sampled = df[df['label'] == 0].sample(min_count, random_state=42)
+    df_neu_sampled = df[df['label'] == 1].sample(min_count, random_state=42)
+    df_pos_sampled = df[df['label'] == 2].sample(min_count, random_state=42)
+    df = pd.concat([df_neg_sampled, df_neu_sampled, df_pos_sampled])
+
+    df.to_csv(output_path)

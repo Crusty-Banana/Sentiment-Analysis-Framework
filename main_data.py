@@ -2,7 +2,8 @@ import argparse
 from helpers import (preprocess_VLSP, 
                      preprocess_Amazon,
                      split_csv,
-                     combine_batches)
+                     combine_batches,
+                     under_sample_data)
 
 def main(args):
     if args.action == 'preprocess_VLSP':
@@ -24,11 +25,15 @@ def main(args):
         combine_batches(original_csv_path=args.original_csv_path,
                         input_path=args.input_path, 
                         output_path=args.output_path)
-    
+    elif args.action == 'undersampling':
+        under_sample_data(input_path=args.input_path, 
+                        output_path=args.output_path)
+    else:
+        print("Bruh")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Synthetic Data Impacts")
 
-    parser.add_argument('--action', type=str, default='split', choices=['preprocess_VLSP', 'preprocess_Amazon', 'split', 'combine'], help='Action to perform')
+    parser.add_argument('--action', type=str, default='split', help='Action to perform')
     
     parser.add_argument('--input_path', type=str, default='data/VLSP/OG-train.csv', help='path to input data')
     parser.add_argument('--output_path', type=str, default='data/VLSP/PP-train.csv', help='path to output data')
