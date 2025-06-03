@@ -1,4 +1,4 @@
-## Preprocess data
+## Preprocess VLSP data
 
 ```bash
 python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-train.csv --output_path data/VLSP/PP-train.csv
@@ -6,6 +6,19 @@ python main_data.py --action preprocess_VLSP --data texts --label labels --input
 python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-test.csv --output_path data/VLSP/PP-test.csv
 
 python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-dev.csv --output_path data/VLSP/PP-dev.csv
+```
+
+## Preproces Amazon data
+
+```bash
+python main_data.py --action preprocess_Amazon --data reviewText --label rating --input_path data/Amazon/OG-train.csv --output_path data/Amazon/PP-train.csv
+python main_data.py --action split --input_path data/Amazon/PP-train.csv --output_path data/Amazon/Split-train
+```
+
+Manually send to OpenAI batch interface.
+
+```bash
+python main_data.py --action combine --original_csv_path data/Amazon/PP-train.csv --input_path data/Amazon/Split-train --output_path data/Amazon/PP-translated-train.csv
 ```
 
 ## train/ test/ inference/
@@ -31,7 +44,6 @@ python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpo
 ```bash
 python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_mBERT_lr3e-05_bs128_epoch4_scheduler1_nw32
 ```
-
 
 # Current Experiment Variables:
 
@@ -60,3 +72,7 @@ Given Dataset X, Y, Z,... How can we fine tune a models
 
 ## Evaluation:
 - Calculate metrics when testing on VLSP test set.
+
+# TO CODE:
+- Undersampling, SMOTE
+- Evaluation

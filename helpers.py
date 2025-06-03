@@ -5,6 +5,8 @@ from sklearn.metrics import accuracy_score
 import json
 import os
 import re
+import nltk
+from nltk.corpus import stopwords
 
 load_dotenv()
 
@@ -65,12 +67,37 @@ def preprocess_VLSP(input_path="data/VLSP/train.csv",
     df.to_csv(output_path)
     return df
 
-def soft_preprocess_df(df, data="Summary", label="Sentiment"):
+def preprocess_Amazon(input_path="data/Amazon/OG-train.csv", 
+                    output_path="data/Amazon/PP-train.csv",
+                    data="reviewText", 
+                    label="rating"):
+    """
+    """
+    df = pd.read_csv(input_path)
+
     df = df[[data, label]].rename(columns={data: 'data', label: 'label'})
 
-    label_encoder_sentiment = LabelEncoder()
+    df['label'] = df['label'].map({5.0: 0, 4.0: 0, 3.0: 1, 2.0: 2, 1.0: 2})
 
-    df['label'] = label_encoder_sentiment.fit_transform(df['label'])
+    df['label'] = df['label'].astype(int)
+    df['data'] = df['data'].astype(str)
+
+    # Remove stop words (english)
+    nltk.download('stopwords')
+    stop_words = set(stopwords.words('english'))
+    df['data'] = df['data'].apply(lambda data: ' '.join([word for word in data.split() if word not in stop_words]))
+
+    df['data'] = df['data'] \
+                .map(lambda data: data.lower()) \
+                .map(lambda data: re.sub(r'http\S+|www\S+|https\S+', '', data, flags=re.MULTILINE)) \
+                .map(lambda data: re.sub(r'<.*?>', '', data)) \
+                .map(lambda data: re.sub(r'[^a-z0-9\s.,!?\'"]', '', data)) \
+                .map(lambda data: re.sub(r'\s+', ' ', data).strip()) 
+    
+    df['data'] = df['data'].str.strip('"')
+    df = df[df['data'].notna() & (df['data'] != "")]
+
+    df.to_csv(output_path)
     return df
 
 def translation_request(idx, data):
@@ -79,15 +106,15 @@ def translation_request(idx, data):
                 "method": "POST",
                 "url": "/v1/chat/completions",
                 "body": {
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-4o",
                     "messages": [
-                        {"role": "system", "content": f"Translate review into Vietnamese, dont add meaning"},
+                        {"role": "system", "content": f"Translate to Vietnamese, preserving original sentiment for sentiment analysis. Output only the translation."},
                         {"role": "user", "content": f"{data}"}
                     ]
                 }
             }
 
-def split_into_batches(df, output_path="Experiment_data/Original_dataset/Flipkart/To_be_translated_batch", batch_size=50000):
+def split_into_batches(df, output_path, batch_size=50000):
     file_count = 0
     line_count = 0
     
@@ -108,18 +135,18 @@ def split_into_batches(df, output_path="Experiment_data/Original_dataset/Flipkar
     batch_file.close()
     return file_count
 
-def combine_batches(original_df_path, translated_batch_path, file_count, output_path):
+def combine_batches(original_csv_path, input_path, output_path, file_count=50000):
     translations = {}
     for i in range(file_count + 1):
-        with open(translated_batch_path + f"/batch_{i}.jsonl", "r") as file:
+        with open(input_path + f"/batch_{i}.jsonl", "r") as file:
             for line in file:
                 response = json.loads(line)
                 custom_id = response["custom_id"]
                 translated_review = response["response"]["body"]["choices"][0]["message"]["content"]
                 translations[custom_id] = translated_review
 
-    df = pd.read_csv(original_df_path)
-    df["Translated_Data"] = df.index.map(
+    df = pd.read_csv(original_csv_path)
+    df["data"] = df.index.map(
         lambda idx: translations.get(f"review-{idx}", None)
     )
 
@@ -137,41 +164,13 @@ def compute_metrics(eval_pred):
     predictions = logits.argmax(axis=-1)
     return {"accuracy": accuracy_score(labels, predictions)}
 
-def split_csv(data_path="Experiment_data/Original_dataset/Flipkart",
-              input_file="Dataset-SA.csv", 
-              data="Summary", 
-              label="Sentiment"):
-    df = pd.read_csv(data_path+"/"+input_file)
-    df = soft_preprocess_df(df, 
-                            data=data, 
-                            label=label)
-    df.to_csv(data_path+"/SP-"+input_file)
+def split_csv(input_path,
+              output_path):
+    df = pd.read_csv(input_path)
 
     split_into_batches(df=df, 
-                       output_path=data_path+"/To_be_translated_batch", 
+                       output_path=output_path, 
                        batch_size=50000)
-    
-def preprocess_Da(data_path="Experiment_data/Original_dataset/Flipkart",
-                  input_file="Translated-SP-Dataset-SA.csv"):
-    df = pd.read_csv(data_path+"/"+input_file)
-
-    # Select only positive and negative reviews
-    # 0: Negative, 1: Positive
-    df = df[df["label"].isin([0, 2])]
-    df = soft_preprocess_df(df, data="Translated_Data", label="label")
-    df['data'] = df['data'].str.strip('"')
-    df = df[df['data'].notna() & (df['data'] != "")]
-    df.to_csv(data_path+"/PP-"+input_file)
-
-def preprocess_Do(data_path="Experiment_data/Original_dataset/AIVIVN_2019",
-                  input_file="train.csv",
-                  data="comment",
-                  label="label"):
-    df = pd.read_csv(data_path+"/"+input_file)
-    df = soft_preprocess_df(df, data=data, label=label)
-    df['data'] = df['data'].str.strip('"')
-    df = df[df['data'].notna() & (df['data'] != "")]
-    df.to_csv(data_path+"/PP-"+input_file)
 
 def sample_data(data_path="", 
                 output_path="", 
