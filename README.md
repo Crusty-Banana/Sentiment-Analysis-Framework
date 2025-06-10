@@ -1,55 +1,6 @@
 # COMP4020 Final Project: Vietnamese Sentiment Analysis
 
-A comprehensive framework for Vietnamese sentiment analysis using state-of-the-art language models including PhoBERT, ViDeBERTa, XLM-RoBERTa, CafeBERT, and ViT5.
-
-## 🚀 Experimented Models
-
-### 1. **PhoBERT** - First Vietnamese BERT
-- **Description**: First large-scale monolingual Vietnamese BERT model
-- **Architecture**: RoBERTa-based
-- **Training Data**: 20GB Vietnamese texts
-- **Strengths**: Word-level Vietnamese processing, outperforms mBERT
-- **Best For**: General Vietnamese NLP tasks, sentiment analysis
-- **Model ID**: `phobert`
-
-### 2. **ViDeBERTa** - State-of-the-art Vietnamese Model
-- **Description**: Vietnamese DeBERTa with superior performance
-- **Architecture**: DeBERTaV3-based with disentangled attention
-- **Training Data**: 138GB Vietnamese texts (CC100)
-- **Strengths**: Superior performance, handles long contexts (512 tokens)
-- **Best For**: High-accuracy Vietnamese understanding tasks
-- **Model ID**: `videbertta`
-
-### 3. **XLM-RoBERTa** - Multilingual Baseline
-- **Description**: Strong multilingual baseline model
-- **Architecture**: RoBERTa-based multilingual
-- **Training Data**: 2.5TB multilingual (137GB Vietnamese)
-- **Strengths**: Cross-lingual capabilities, robust performance
-- **Best For**: Multilingual applications, baseline comparisons
-- **Model ID**: `xlm_roberta`
-
-### 4. **CafeBERT** - Vietnamese-Adapted Model
-- **Description**: XLM-RoBERTa adapted specifically for Vietnamese
-- **Architecture**: XLM-RoBERTa + Vietnamese adaptation
-- **Training Data**: Large-scale Vietnamese texts
-- **Strengths**: Combines multilingual and Vietnamese-specific knowledge
-- **Best For**: Vietnamese tasks requiring multilingual understanding
-- **Model ID**: `cafebert`
-
-### 5. **ViT5** - Vietnamese T5 Model
-- **Description**: Vietnamese T5 for text-to-text generation
-- **Architecture**: T5 encoder-decoder
-- **Training Data**: 70GB Vietnamese texts
-- **Strengths**: Versatile text-to-text framework
-- **Best For**: Text generation, summarization, classification
-- **Model ID**: `vit5`
-
-### 6. **Custom mBERT** - Enhanced Multilingual BERT
-- **Description**: Original multilingual BERT with custom architecture
-- **Architecture**: BERT with concatenated last 5 hidden states
-- **Strengths**: Enhanced feature extraction from multiple layers
-- **Best For**: Baseline comparisons, research purposes
-- **Model ID**: `mBert`
+A comprehensive framework for Vietnamese sentiment analysis using state-of-the-art language models including Custom mBERT, PhoBERT, ViDeBERTa, XLM-RoBERTa, CafeBERT, and ViT5.
 
 ## 📊 Data Preprocessing
 
@@ -381,7 +332,12 @@ python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_pat
 - Amazon (dataset 2)
 
 ## Models (Tuan Anh):
-- mBert
+- Custom mBert
+- PhoBERT
+- ViDeBERTa
+- XLM-RoBERTa
+- CafeBERT
+- ViT5
 
 ## Ways to Finetunes (Nhat Minh): 
 

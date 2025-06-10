@@ -1,5 +1,5 @@
 # torch using cuda 12
-# torch==2.5.1+cu121
+torch>=2.2.0
 # torchaudio==2.5.1+cu121
 # torchvision==0.20.1+cu121
 
@@ -10,6 +10,7 @@ ipykernel==6.29.5
 scikit-learn==1.6.1
 openai==1.82.1
 python-dotenv==1.1.0
-transformers==4.52.4
-numpy==2.1.2
+transformers>=4.30.0
+numpy>=1.22,<2.0
 nltk
+kagglehub

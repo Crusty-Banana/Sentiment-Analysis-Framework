@@ -64,7 +64,7 @@ def preprocess_VLSP(input_path="data/VLSP/train.csv",
     df['data'] = df['data'].str.strip('"')
     df = df[df['data'].notna() & (df['data'] != "")]
 
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
     return df
 
 def preprocess_Amazon(input_path="data/Amazon/OG-train.csv", 
@@ -97,7 +97,7 @@ def preprocess_Amazon(input_path="data/Amazon/OG-train.csv",
     df['data'] = df['data'].str.strip('"')
     df = df[df['data'].notna() & (df['data'] != "")]
 
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
     return df
 
 def translation_request(idx, data):
@@ -138,7 +138,7 @@ def split_into_batches(df, output_path, batch_size=50000):
 def combine_batches(original_csv_path, input_path, output_path, file_count=50000):
     translations = {}
     for i in range(file_count + 1):
-        with open(input_path + f"/batch_{i}.jsonl", "r") as file:
+        with open(input_path + f"/batchoutput_{i}.jsonl", "r") as file:
             for line in file:
                 response = json.loads(line)
                 custom_id = response["custom_id"]
@@ -177,7 +177,7 @@ def sample_data(data_path="",
                 percent_sample_size=50):
     df = pd.read_csv(data_path, index_col=0)
     df = df.sample(frac=percent_sample_size/100)
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
     return df
 
 def concate_data(data_path1="", 
@@ -187,7 +187,7 @@ def concate_data(data_path1="",
     df2 = pd.read_csv(data_path2, index_col=0)
 
     df = pd.concat([df1, df2])
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
     return df
 
 def balance_the_data(data_path, output_path):
@@ -204,7 +204,7 @@ def balance_the_data(data_path, output_path):
     df = pd.concat([df_label_0, df_label_1])
     df = df.sample(frac=1)
 
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
 
 def under_sample_data(input_path, output_path):
     df = pd.read_csv(input_path, index_col=0)
@@ -216,4 +216,4 @@ def under_sample_data(input_path, output_path):
     df_pos_sampled = df[df['label'] == 2].sample(min_count, random_state=42)
     df = pd.concat([df_neg_sampled, df_neu_sampled, df_pos_sampled])
 
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
