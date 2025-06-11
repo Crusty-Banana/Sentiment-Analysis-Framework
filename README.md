@@ -24,8 +24,18 @@ python main_data.py --action combine --original_csv_path data/Amazon/PP-train.cs
 ## Other tools
 
 ```bash
-python main_data.py --action undersampling --input_path data/Amazon/PP-train.csv --output_path data/Amazon/undersampled-PP-train.csv
+# Undersampling - balance dataset by reducing majority classes to minority class size
+python main_data.py --action undersampling --input_path data/VLSP/PP-train.csv --output_path data/VLSP/undersampled-PP-train.csv
 
+# Oversampling - balance dataset by duplicating minority class samples
+python main_data.py --action oversampling --input_path data/VLSP/PP-train.csv --output_path data/VLSP/oversampled-PP-train.csv
+
+# SMOTE - generate synthetic samples for minority classes
+python main_data.py --action smote --input_path data/VLSP/PP-train.csv --output_path data/VLSP/smote-PP-train.csv
+
+# LLM Few-shot Generation - generate synthetic samples using OpenAI GPT-4
+# Note: Requires OPENAI_API_KEY in .env file
+python main_data.py --action llm_generation --input_path data/VLSP/PP-train.csv --output_path data/VLSP/llm-augmented-PP-train.csv --target_samples_per_class 1500
 ```
 
 
@@ -72,14 +82,45 @@ Given Dataset X, Y, Z,... How can we fine tune a models
 - 
 
 ## Data Augmentation (Ngoc Toan): 
-- Undersampling
-- OverSampling
-- SMOTE
-- LLM few shot sample generation
-- Translate Dataset Amazon to Vietnamese.
+- ✅ Undersampling - Balance dataset by reducing majority classes
+- ✅ OverSampling - Balance dataset by duplicating minority classes  
+- ✅ SMOTE - Synthetic Minority Oversampling Technique
+- ✅ LLM few shot sample generation - Generate synthetic samples using GPT-4
+- ✅ Translate Dataset Amazon to Vietnamese
 
 ## Evaluation:
 - Calculate metrics when testing on VLSP test set.
 
 # TO CODE:
-- More detailed Evaluation
+- ✅ More detailed Evaluation
+- ✅ Complete Data Augmentation Implementation:
+  - ✅ Undersampling 
+  - ✅ OverSampling
+  - ✅ SMOTE  
+  - ✅ LLM few-shot generation
+  - ✅ Amazon→Vietnamese translation
+
+## 📊 Data Augmentation Techniques Available
+
+All data augmentation techniques are now implemented! See `DATA_AUGMENTATION_SUMMARY.md` for detailed usage and test results.
+
+## 🚀 Quick Start
+
+1. **Preprocess datasets:**
+   ```bash
+   python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-train.csv --output_path data/VLSP/PP-train.csv
+   ```
+
+2. **Apply data augmentation:**
+   ```bash
+   # OverSampling (recommended for balanced training)
+   python main_data.py --action oversampling --input_path data/VLSP/PP-train.csv --output_path data/VLSP/oversampled-train.csv
+   
+   # SMOTE (for synthetic minority samples)  
+   python main_data.py --action smote --input_path data/VLSP/PP-train.csv --output_path data/VLSP/smote-train.csv
+   ```
+
+3. **Train model:**
+   ```bash
+   python main_model.py --action train --data_path data/VLSP/oversampled-train.csv --checkpoint_path models/VLSP --epoch 10
+   ```

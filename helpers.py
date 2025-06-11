@@ -7,6 +7,9 @@ import os
 import re
 import nltk
 from nltk.corpus import stopwords
+import numpy as np
+from imblearn.over_sampling import SMOTE, RandomOverSampler
+from openai import OpenAI
 
 load_dotenv()
 
@@ -217,3 +220,202 @@ def under_sample_data(input_path, output_path):
     df = pd.concat([df_neg_sampled, df_neu_sampled, df_pos_sampled])
 
     df.to_csv(output_path)
+
+def over_sample_data(input_path, output_path):
+    """
+    Apply Random Over Sampling to balance the dataset by duplicating minority class samples.
+    
+    Args:
+        input_path (str): Path to input CSV file
+        output_path (str): Path to output CSV file
+    """
+    df = pd.read_csv(input_path, index_col=0)
+    count_neg, count_neu, count_pos = df['label'].value_counts().sort_index()
+    max_count = max(count_neg, count_neu, count_pos)
+
+    # Oversample each class to the maximum count
+    df_neg = df[df['label'] == 0]
+    df_neu = df[df['label'] == 1]
+    df_pos = df[df['label'] == 2]
+    
+    # Random oversampling with replacement
+    df_neg_oversampled = df_neg.sample(max_count, replace=True, random_state=42)
+    df_neu_oversampled = df_neu.sample(max_count, replace=True, random_state=42)
+    df_pos_oversampled = df_pos.sample(max_count, replace=True, random_state=42)
+    
+    df = pd.concat([df_neg_oversampled, df_neu_oversampled, df_pos_oversampled])
+    df = df.sample(frac=1, random_state=42)  # Shuffle the data
+
+    df.to_csv(output_path)
+    print(f"Over-sampling completed. Original: {len(pd.read_csv(input_path, index_col=0))}, New: {len(df)}")
+
+def apply_smote(input_path, output_path, text_vectorizer='tfidf', max_features=5000):
+    """
+    Apply SMOTE (Synthetic Minority Oversampling Technique) to balance the dataset.
+    
+    Args:
+        input_path (str): Path to input CSV file
+        output_path (str): Path to output CSV file
+        text_vectorizer (str): Type of vectorizer ('tfidf' or 'count')
+        max_features (int): Maximum number of features for text vectorization
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+    
+    df = pd.read_csv(input_path, index_col=0)
+    
+    # Vectorize text data for SMOTE (SMOTE requires numerical features)
+    if text_vectorizer == 'tfidf':
+        vectorizer = TfidfVectorizer(max_features=max_features, stop_words='english')
+    else:
+        vectorizer = CountVectorizer(max_features=max_features, stop_words='english')
+    
+    X = vectorizer.fit_transform(df['data']).toarray()
+    y = df['label'].values
+    
+    # Apply SMOTE
+    smote = SMOTE(random_state=42)
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+    
+    # Create new dataframe with synthetic samples
+    # Note: For text data, we can't directly convert back from vectorized form to meaningful text    # So we'll use the closest original samples to represent the synthetic ones
+    original_texts = df['data'].values
+    synthetic_df_list = []
+    
+    for i, (x_synthetic, y_synthetic) in enumerate(zip(X_resampled, y_resampled)):
+        # Find the most similar original text for synthetic samples
+        if i < len(df):
+            # Original sample
+            synthetic_df_list.append({
+                'data': original_texts[i],
+                'label': y_synthetic
+            })
+        else:
+            # Synthetic sample - find most similar original text
+            # Handle division by zero in similarity calculation
+            norms_X = np.linalg.norm(X, axis=1)
+            norm_synthetic = np.linalg.norm(x_synthetic)
+            
+            # Avoid division by zero
+            if norm_synthetic == 0:
+                most_similar_idx = 0
+            else:
+                similarities = np.dot(X, x_synthetic) / (norms_X * norm_synthetic + 1e-8)
+                most_similar_idx = np.argmax(similarities)
+            
+            synthetic_df_list.append({
+                'data': f"[SYNTHETIC] {original_texts[most_similar_idx]}",
+                'label': y_synthetic
+            })
+    
+    synthetic_df = pd.DataFrame(synthetic_df_list)
+    synthetic_df = synthetic_df.sample(frac=1, random_state=42)  # Shuffle
+    
+    synthetic_df.to_csv(output_path)
+    print(f"SMOTE completed. Original: {len(df)}, New: {len(synthetic_df)}")
+
+def llm_few_shot_generation(input_path, output_path, target_samples_per_class=1000, api_key=None):
+    """
+    Generate synthetic samples using LLM few-shot learning for data augmentation.
+    
+    Args:
+        input_path (str): Path to input CSV file
+        output_path (str): Path to output CSV file
+        target_samples_per_class (int): Target number of samples per class
+        api_key (str): OpenAI API key (optional, will use env variable if not provided)
+    """
+    try:
+        # Initialize OpenAI client
+        client = OpenAI(api_key=api_key or os.getenv('OPENAI_API_KEY'))
+        
+        df = pd.read_csv(input_path, index_col=0)
+        
+        # Get label counts
+        label_counts = df['label'].value_counts().sort_index()
+        print(f"Current label distribution: {dict(label_counts)}")
+        
+        # Labels mapping for Vietnamese sentiment
+        label_map = {0: 'tích cực (positive)', 1: 'trung tính (neutral)', 2: 'tiêu cực (negative)'}
+        
+        augmented_samples = []
+        
+        for label in [0, 1, 2]:
+            current_count = label_counts.get(label, 0)
+            if current_count >= target_samples_per_class:
+                print(f"Label {label} already has enough samples ({current_count})")
+                continue
+                
+            samples_needed = target_samples_per_class - current_count
+            print(f"Generating {samples_needed} samples for label {label} ({label_map[label]})")
+            
+            # Get few-shot examples
+            class_samples = df[df['label'] == label]['data'].tolist()
+            few_shot_examples = class_samples[:5]  # Use 5 examples
+            
+            # Create few-shot prompt
+            examples_text = "\n".join([f"- {example}" for example in few_shot_examples])
+            
+            prompt = f"""Bạn là một chuyên gia phân tích cảm xúc tiếng Việt. Hãy tạo ra {min(samples_needed, 50)} câu phản hồi tiếng Việt có cảm xúc {label_map[label]}.
+
+Dựa trên các ví dụ sau:
+{examples_text}
+
+Yêu cầu:
+1. Các câu phải là tiếng Việt tự nhiên
+2. Cảm xúc phải rõ ràng và nhất quán ({label_map[label]})
+3. Độ dài từ 10-50 từ
+4. Đa dạng về chủ đề (sản phẩm, dịch vụ, trải nghiệm)
+5. Mỗi câu trên một dòng, không đánh số
+
+Tạo {min(samples_needed, 50)} câu:"""
+
+            try:
+                # Generate batch of samples
+                batches = (samples_needed + 49) // 50  # Round up division
+                
+                for batch in range(batches):
+                    batch_size = min(50, samples_needed - batch * 50)
+                    if batch_size <= 0:
+                        break
+                        
+                    batch_prompt = prompt.replace(f"{min(samples_needed, 50)}", str(batch_size))
+                    
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "Bạn là một chuyên gia tạo dữ liệu để huấn luyện mô hình phân tích cảm xúc tiếng Việt."},
+                            {"role": "user", "content": batch_prompt}
+                        ],
+                        temperature=0.8,
+                        max_tokens=2000
+                    )
+                    
+                    generated_text = response.choices[0].message.content
+                    generated_samples = [line.strip() for line in generated_text.split('\n') if line.strip() and not line.strip().startswith('-') and len(line.strip()) > 10]
+                    
+                    for sample in generated_samples[:batch_size]:
+                        augmented_samples.append({
+                            'data': f"[LLM_GEN] {sample}",
+                            'label': label
+                        })
+                    
+                    print(f"Generated batch {batch + 1}/{batches} for label {label}")
+                    
+            except Exception as e:
+                print(f"Error generating samples for label {label}: {e}")
+                continue
+        
+        # Combine original and augmented data
+        augmented_df = pd.DataFrame(augmented_samples)
+        final_df = pd.concat([df, augmented_df], ignore_index=True)
+        final_df = final_df.sample(frac=1, random_state=42)  # Shuffle
+        
+        final_df.to_csv(output_path)
+        print(f"LLM few-shot generation completed. Original: {len(df)}, Added: {len(augmented_samples)}, Final: {len(final_df)}")
+        
+        # Print final distribution
+        final_counts = final_df['label'].value_counts().sort_index()
+        print(f"Final label distribution: {dict(final_counts)}")
+        
+    except Exception as e:
+        print(f"Error in LLM few-shot generation: {e}")
+        print("Make sure you have set OPENAI_API_KEY in your .env file")
