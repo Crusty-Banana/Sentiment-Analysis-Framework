@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # For Training
     parser.add_argument('--data_path', type=str, default='', help='Directory to load data')
     parser.add_argument('--model_name', type=str, default='mBert', 
-                       choices=['mBert', 'phobert', 'videbertta', 'xlm_roberta', 'cafebert', 'vit5'],
+                       choices=['mBert', 'phobert', 'videbertta', 'xlm_roberta', 'cafebert', 'vit5', 'mbert'],
                        help='Name of the Vietnamese model to use')
     parser.add_argument('--model_path', type=str, default='', help='Directory to load trained model')
     parser.add_argument('--checkpoint_path', type=str, default='', help='Directory to save trained model')

@@ -1,0 +1,156 @@
+models/TranslatedAmazonThenVLSP_phobert_lr2e-05_bs64_epoch12_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.7733
+Weighted Precision: 0.7731
+Weighted Recall: 0.7733
+Weighted F1-Score: 0.7727
+AUC-ROC: 0.9158
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.82      0.87      0.84       350
+           1       0.70      0.71      0.70       350
+           2       0.80      0.75      0.77       350
+
+    accuracy                           0.77      1050
+   macro avg       0.77      0.77      0.77      1050
+weighted avg       0.77      0.77      0.77      1050
+
+
+Confusion Matrix:
+[[304  35  11]
+ [ 48 247  55]
+ [ 19  70 261]]
+--------------------------
+models/TranslatedAmazonThenVLSP_videbertta_lr2e-05_bs64_epoch12_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.4000
+Weighted Precision: 0.4116
+Weighted Recall: 0.4000
+Weighted F1-Score: 0.3788
+AUC-ROC: 0.5927
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.48      0.27      0.34       350
+           1       0.39      0.68      0.49       350
+           2       0.37      0.25      0.30       350
+
+    accuracy                           0.40      1050
+   macro avg       0.41      0.40      0.38      1050
+weighted avg       0.41      0.40      0.38      1050
+
+
+Confusion Matrix:
+[[ 94 176  80]
+ [ 41 238  71]
+ [ 61 201  88]]
+--------------------------
+models/TranslatedAmazonThenVLSP_xlm_roberta_lr2e-05_bs64_epoch10_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.7667
+Weighted Precision: 0.7667
+Weighted Recall: 0.7667
+Weighted F1-Score: 0.7659
+AUC-ROC: 0.9072
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.81      0.86      0.83       350
+           1       0.71      0.73      0.72       350
+           2       0.78      0.72      0.75       350
+
+    accuracy                           0.77      1050
+   macro avg       0.77      0.77      0.77      1050
+weighted avg       0.77      0.77      0.77      1050
+
+
+Confusion Matrix:
+[[300  31  19]
+ [ 45 254  51]
+ [ 26  73 251]]
+--------------------------
+models/TranslatedAmazonThenVLSP_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.7848
+Weighted Precision: 0.7852
+Weighted Recall: 0.7848
+Weighted F1-Score: 0.7847
+AUC-ROC: 0.9207
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.82      0.85      0.84       350
+           1       0.72      0.73      0.72       350
+           2       0.82      0.78      0.80       350
+
+    accuracy                           0.78      1050
+   macro avg       0.79      0.78      0.78      1050
+weighted avg       0.79      0.78      0.78      1050
+
+
+Confusion Matrix:
+[[298  43   9]
+ [ 44 254  52]
+ [ 20  58 272]]
+--------------------------
+models/TranslatedAmazonThenVLSP_vit5_lr2e-05_bs64_epoch10_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.7314
+Weighted Precision: 0.7296
+Weighted Recall: 0.7314
+Weighted F1-Score: 0.7301
+AUC-ROC: 0.8892
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.77      0.82      0.80       350
+           1       0.69      0.65      0.67       350
+           2       0.73      0.73      0.73       350
+
+    accuracy                           0.73      1050
+   macro avg       0.73      0.73      0.73      1050
+weighted avg       0.73      0.73      0.73      1050
+
+
+Confusion Matrix:
+[[288  38  24]
+ [ 54 226  70]
+ [ 31  65 254]]
+--------------------------
+models/TranslatedAmazonThenVLSP_mbert_lr2e-05_bs64_epoch12_scheduler1_nw32
+
+--- Evaluation Results ---
+Validation Accuracy: 0.6829
+Weighted Precision: 0.6809
+Weighted Recall: 0.6829
+Weighted F1-Score: 0.6815
+AUC-ROC: 0.8483
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.73      0.76      0.75       350
+           1       0.63      0.59      0.61       350
+           2       0.68      0.70      0.69       350
+
+    accuracy                           0.68      1050
+   macro avg       0.68      0.68      0.68      1050
+weighted avg       0.68      0.68      0.68      1050
+
+
+Confusion Matrix:
+[[267  49  34]
+ [ 66 205  79]
+ [ 33  72 245]]
+--------------------------

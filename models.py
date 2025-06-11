@@ -11,7 +11,13 @@ from transformers import (BertForSequenceClassification,
 import torch
 from tqdm import tqdm  # Import tqdm
 import torch as _torch
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import (
+    confusion_matrix,
+    precision_recall_fscore_support,
+    roc_auc_score,
+    average_precision_score,
+    classification_report
+)
 import numpy as np
 import torch.nn as _nn
 import torch.nn.functional as _F
@@ -146,9 +152,10 @@ class CustomBERTModel:
 
         self.model.to(self.device)
         self.model.eval()
-        total, correct = 0, 0
+
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         # Wrap the validation dataloader with tqdm to show progress
         with torch.no_grad():
@@ -158,20 +165,43 @@ class CustomBERTModel:
                 labels = batch['label'].to(self.device)
 
                 logits = self.model(input_ids, attention_mask=attention_mask)
+
                 predictions = torch.argmax(logits, dim=-1)
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
 
-        accuracy = correct / total
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
+
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
-        # Compute and print confusion matrix
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=128):
         """Perform inference on a single text.
@@ -271,9 +301,10 @@ class PhoBERTModel:
     def evaluate(self, dataloader):
         self.model.to(self.device)
         self.model.eval()
-        total, correct = 0, 0
+
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Evaluating", leave=False):
@@ -282,20 +313,43 @@ class PhoBERTModel:
                 labels = batch['label'].to(self.device)
 
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+
                 predictions = torch.argmax(outputs.logits, dim=-1)
-                
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(outputs.logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
 
-        accuracy = correct / total
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
+
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=256):
         self.model.eval()
@@ -331,7 +385,7 @@ class PhoBERTModel:
 
 # ViDeBERTa Model - State-of-the-art Vietnamese model
 class ViDeBERTaModel:
-    def __init__(self, model_name="hysonlab/videbert-base", num_labels=3, device="cpu"):
+    def __init__(self, model_name="Fsoft-AIC/videberta-base", num_labels=3, device="cpu"):
         try:
             self.model, self.tokenizer = safe_load_model_and_tokenizer(
                 AutoModelForSequenceClassification, 
@@ -380,9 +434,10 @@ class ViDeBERTaModel:
     def evaluate(self, dataloader):
         self.model.to(self.device)
         self.model.eval()
-        total, correct = 0, 0
+
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Evaluating", leave=False):
@@ -391,20 +446,43 @@ class ViDeBERTaModel:
                 labels = batch['label'].to(self.device)
 
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+
                 predictions = torch.argmax(outputs.logits, dim=-1)
-                
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(outputs.logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
+                
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
 
-        accuracy = correct / total
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=512):
         self.model.eval()
@@ -440,7 +518,7 @@ class ViDeBERTaModel:
 
 # XLM-RoBERTa Model - Strong multilingual baseline
 class XLMRobertaModel:
-    def __init__(self, model_name="xlm-roberta-base", num_labels=3, device="cpu"):            
+    def __init__(self, model_name="FacebookAI/xlm-roberta-base", num_labels=3, device="cpu"):            
         try:
             self.model, self.tokenizer = safe_load_model_and_tokenizer(
                 XLMRobertaForSequenceClassification, 
@@ -489,9 +567,9 @@ class XLMRobertaModel:
     def evaluate(self, dataloader):
         self.model.to(self.device)
         self.model.eval()
-        total, correct = 0, 0
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Evaluating", leave=False):
@@ -500,20 +578,43 @@ class XLMRobertaModel:
                 labels = batch['label'].to(self.device)
 
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+
                 predictions = torch.argmax(outputs.logits, dim=-1)
-                
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(outputs.logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
+                
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
 
-        accuracy = correct / total
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=512):
         self.model.eval()
@@ -598,9 +699,9 @@ class CafeBERTModel:
     def evaluate(self, dataloader):
         self.model.to(self.device)
         self.model.eval()
-        total, correct = 0, 0
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Evaluating", leave=False):
@@ -609,20 +710,43 @@ class CafeBERTModel:
                 labels = batch['label'].to(self.device)
 
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+
                 predictions = torch.argmax(outputs.logits, dim=-1)
-                
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(outputs.logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
+                
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
 
-        accuracy = correct / total
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=512):
         self.model.eval()
@@ -727,9 +851,9 @@ class ViT5Model:
         self.base_model.eval()
         self.classifier.eval()
         
-        total, correct = 0, 0
         all_labels = []
         all_predictions = []
+        all_probs = []
 
         with torch.no_grad():
             for batch in tqdm(dataloader, desc="Evaluating", leave=False):
@@ -744,20 +868,43 @@ class ViT5Model:
                 
                 pooled_output = encoder_outputs.last_hidden_state.mean(dim=1)
                 logits = self.classifier(pooled_output)
+
                 predictions = torch.argmax(logits, dim=-1)
-                
-                total += labels.size(0)
-                correct += (predictions == labels).sum().item()
+                probs = _F.softmax(logits, dim=-1)
 
                 all_labels.extend(labels.cpu().numpy())
                 all_predictions.extend(predictions.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy())
+                
+        all_labels = np.array(all_labels)
+        all_predictions = np.array(all_predictions)
+        all_probs = np.array(all_probs)
 
-        accuracy = correct / total
+        accuracy = np.mean(all_predictions == all_labels)
         print(f"Validation Accuracy: {accuracy:.4f}")
 
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        report = classification_report(all_labels, all_predictions)
         cm = confusion_matrix(all_labels, all_predictions)
-        print("Confusion Matrix:")
-        print(cm)
+        roc_auc = roc_auc_score(all_labels, all_probs, multi_class='ovr', average='macro')
+        output = f"""
+--- Evaluation Results ---
+Validation Accuracy: {accuracy:.4f}
+Weighted Precision: {precision:.4f}
+Weighted Recall: {recall:.4f}
+Weighted F1-Score: {f1:.4f}
+AUC-ROC: {roc_auc if isinstance(roc_auc, float) else roc_auc:.4f}
+
+Classification Report:
+{report}
+
+Confusion Matrix:
+{cm}
+--------------------------
+"""
+        return output
 
     def predict(self, text, max_length=512):
         self.base_model.eval()

@@ -106,7 +106,7 @@ def train_model_with_dataset(model_name="mBert",
     print("\nTesting on Vietnamese samples:")
     for text in vietnamese_test_texts:
         prediction = model.predict(text)
-        sentiment_map = {0: 'negative', 1: 'neutral', 2: 'positive'}
+        sentiment_map = {0: 'positive', 1: 'neutral', 2: 'negative'}
         print(f"Text: '{text}' -> Prediction: {sentiment_map.get(prediction, prediction)}")
 
     #---------------- Save Model -----------------#
@@ -151,7 +151,16 @@ def inference_model_with_dataset(model_name="mBert",
 
     #---------------- Test Model ----------------#
     print("Starting evaluation...")
-    model.evaluate(test_dataloader)
+    output = model.evaluate(test_dataloader)
+    output = f"{model_path}\n" + output
+    print(output)
+    try:
+        with open("evaluation_log.txt", "a") as f:
+            f.write(output)
+        print(f"Results successfully written to evaluation_log.txt")
+    except IOError as e:
+        print(f"Error writing to log file evaluation_log.txt: {e}")
+
     print("Evaluation completed!")
 
 def compare_vietnamese_models(data_path="", batch_size=4, device="cpu"):

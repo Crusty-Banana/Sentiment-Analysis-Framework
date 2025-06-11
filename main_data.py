@@ -3,7 +3,10 @@ from helpers import (preprocess_VLSP,
                      preprocess_Amazon,
                      split_csv,
                      combine_batches,
-                     under_sample_data)
+                     under_sample_data,
+                     sample_data,
+                     concate_data,
+                     remove_nan_rows)
 
 def vietnamese_data_info():
     """Display information about Vietnamese datasets and preprocessing"""
@@ -57,6 +60,16 @@ def main(args):
     elif args.action == 'undersampling':
         under_sample_data(input_path=args.input_path, 
                         output_path=args.output_path)
+    elif args.action == 'sample':
+        sample_data(input_path=args.input_path,
+                    output_path=args.output_path,
+                    percent_sample_size=args.percent_sample_size)
+    elif args.action == 'concate':
+        concate_data(data_path1=args.input_path,
+                    data_path2=args.input_path2,
+                    output_path=args.output_path)
+    elif args.action == 'remove_nan':
+        remove_nan_rows(input_path=args.input_path)
     elif args.action == 'info':
         vietnamese_data_info()
     else:
@@ -66,7 +79,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Vietnamese Sentiment Analysis Data Processing")
 
     parser.add_argument('--action', type=str, default='info', 
-                       choices=['preprocess_VLSP', 'preprocess_Amazon', 'split', 'combine', 'undersampling', 'info'],
+                       choices=['preprocess_VLSP', 'preprocess_Amazon', 'split', 'combine', 'undersampling', 'sample', 'concate', 'remove_nan', 'info'],
                        help='Action to perform on Vietnamese data')
     
     parser.add_argument('--input_path', type=str, default='data/VLSP/OG-train.csv', help='path to input data')
@@ -76,6 +89,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--original_csv_path', type=str, default='data/Amazon/OG-train.csv', 
                        help='Path to original CSV for combining')
-
+    parser.add_argument('--percent_sample_size', type=int, default='100', 
+                       help='percentage of data to sample (0-100)')
+    parser.add_argument('--input_path2', type=str, default='', help='second path to input data')
+    
     args = parser.parse_args()
     main(args)

@@ -49,6 +49,8 @@ def preprocess_VLSP(input_path="data/VLSP/train.csv",
 
     df['label'] = df['label'].map({'POS': 0, 'NEU': 1, 'NEG': 2})
 
+    df['label'] = df['label'].astype(int)
+    df['data'] = df['data'].astype(str)
     # stop_words = set(['không', 'là', 'và', 'của', 'được', 'có', 'một', 'trong', 'để', 'cho', 'này', 'cũng', 'như', 'với'])
     # df['data'] = df['data'].apply(lambda data: ' '.join([word for word in data.split() if word not in stop_words]))
 
@@ -138,6 +140,8 @@ def split_into_batches(df, output_path, batch_size=50000):
 def combine_batches(original_csv_path, input_path, output_path, file_count=50000):
     translations = {}
     for i in range(file_count + 1):
+        if not os.path.exists(input_path + f"/batchoutput_{i}.jsonl"):
+            break
         with open(input_path + f"/batchoutput_{i}.jsonl", "r") as file:
             for line in file:
                 response = json.loads(line)
@@ -150,6 +154,7 @@ def combine_batches(original_csv_path, input_path, output_path, file_count=50000
         lambda idx: translations.get(f"review-{idx}", None)
     )
 
+    df = df[df['data'].notna() & (df['data'] != "")]
     df.to_csv(output_path, index=False)
     return df
 
@@ -172,10 +177,10 @@ def split_csv(input_path,
                        output_path=output_path, 
                        batch_size=50000)
 
-def sample_data(data_path="", 
+def sample_data(input_path="", 
                 output_path="", 
                 percent_sample_size=50):
-    df = pd.read_csv(data_path, index_col=0)
+    df = pd.read_csv(input_path, index_col=0)
     df = df.sample(frac=percent_sample_size/100)
     df.to_csv(output_path, index=False)
     return df
@@ -216,4 +221,11 @@ def under_sample_data(input_path, output_path):
     df_pos_sampled = df[df['label'] == 2].sample(min_count, random_state=42)
     df = pd.concat([df_neg_sampled, df_neu_sampled, df_pos_sampled])
 
-    df.to_csv(output_path, index=False)
+    df.to_csv(output_path, index=True)
+
+def remove_nan_rows(input_path):
+    df = pd.read_csv(input_path)
+    df = df.dropna(subset=['data', 'label'])
+    df = df[df['data'].notna() & (df['data'] != "")]
+    df = df[df['label'].notna() & (df['label'] != "")]
+    df.to_csv(input_path, index=False)

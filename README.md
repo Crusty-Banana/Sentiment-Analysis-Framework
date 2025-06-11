@@ -38,7 +38,7 @@ python main_data.py --action split \
 # Combine processed batches
 python main_data.py --action combine \
     --original_csv_path data/Amazon/PP-train.csv \
-    --input_path data/Amazon/Split-train \
+    --input_path data/Amazon/translated_batch \
     --output_path data/Amazon/translated-PP-train.csv
 ```
 
@@ -47,8 +47,29 @@ python main_data.py --action combine \
 # Undersample data for class balance
 python main_data.py --action undersampling \
     --input_path data/Amazon/PP-train.csv --output_path data/Amazon/undersampled-PP-train.csv
+
+python main_data.py --action undersampling \
+    --input_path data/Amazon/translated-PP-train.csv \
+    --output_path data/Amazon/undersampled-translated-PP-train.csv
 ```
 
+### Data Sampling
+```bash
+# Sample from Undersampled procesed data
+python main_data.py --action sample \
+    --input_path data/Amazon/undersampled-translated-PP-train.csv \
+    --output_path data/Amazon/sample50-undersampled-translated-PP-train.csv \
+    --percent_sample_size 50
+```
+
+### Data Concatenate
+```bash
+# Sample from Undersampled procesed data
+python main_data.py --action concate \
+    --input_path data/Amazon/sample50-undersampled-translated-PP-train.csv \
+    --input_path2 data/VLSP/PP-train.csv \
+    --output_path data/Amazon/VLSP+tranlated-Amazon50.csv
+```
 ## 🤖 Model Training & Evaluation
 
 ### Training Vietnamese Models
@@ -58,7 +79,7 @@ python main_data.py --action undersampling \
 # Train PhoBERT on VLSP dataset
 python main_model.py --action train --model_name phobert \
     --data_path data/VLSP/PP-train.csv --checkpoint_path models/PhoBERT_VLSP \
-    --epoch 10 --learning_rate 2e-5 --batch_size 64
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0
 
 # Train PhoBERT on Amazon dataset
 python main_model.py --action train --model_name phobert \
@@ -71,7 +92,7 @@ python main_model.py --action train --model_name phobert \
 # Train ViDeBERTa for best performance
 python main_model.py --action train --model_name videbertta \
     --data_path data/VLSP/PP-train.csv --checkpoint_path models/ViDeBERTa_VLSP \
-    --epoch 8 --learning_rate 1e-5 --batch_size 32
+    --epoch 8 --learning_rate 1e-5 --batch_size 32 --device cuda:0
 
 # Fine-tune with scheduler
 python main_model.py --action train --model_name videbertta \
@@ -84,7 +105,7 @@ python main_model.py --action train --model_name videbertta \
 # Train XLM-RoBERTa as baseline
 python main_model.py --action train --model_name xlm_roberta \
     --data_path data/VLSP/PP-train.csv --checkpoint_path models/XLM_RoBERTa_VLSP \
-    --epoch 10 --learning_rate 2e-5 --batch_size 64
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0
 ```
 
 #### CafeBERT Training (Vietnamese-adapted)
@@ -110,7 +131,7 @@ python main_model.py --action train --model_name vit5 \
 # Test PhoBERT
 python main_model.py --action test --model_name phobert \
     --data_path data/VLSP/PP-test.csv \
-    --model_path models/PhoBERT_VLSP_phobert_lr2e-05_bs64_epoch10_scheduler1_nw32
+    --model_path models/PhoBERT_VLSP_phobert_lr2e-05_bs64_epoch10_scheduler1_nw32 --device cuda:0
 
 # Test ViDeBERTa
 python main_model.py --action test --model_name videbertta \
@@ -168,31 +189,284 @@ python main_model.py --action inference --model_name xlm_roberta \
 - **Custom mBERT**: Enhanced multilingual BERT
 
 #### Fine-tuning Strategies
-1. Direct training on Vietnamese data (VLSP)
+1. Direct finetuning on Vietnamese data (VLSP)
 2. Pre-training on translated Amazon → fine-tune on VLSP
-3. Mixed training (Amazon + VLSP combined)
-4. Cross-lingual transfer learning
-5. Multi-task learning approaches
+3. Mixed finetuning (translated Amazon + VLSP)
+4. Cross-lingual transfer learning (Pre-training on Amazon → fine-tune on VLSP)
 
 #### Data Augmentation Techniques
 - **Undersampling**: Balance class distribution
-- **Oversampling**: Increase minority class samples
-- **SMOTE**: Synthetic minority oversampling
-- **LLM-based generation**: Few-shot sample generation
 - **Translation augmentation**: Translate and back-translate
+
+## 🔬 Experiments Script
+
+### Direct finetuning on Vietnamese data
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+```
+
+### Pretraining on Amazon data
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 128 --device cuda:0
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/Amazon/undersampled-PP-train.csv --checkpoint_path models/Amazon \
+    --epoch 1 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+```
+
+### Pretraining on translated Amazon data
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 6 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 6 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 5 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 5 --learning_rate 2e-5 --batch_size 64 --device cuda:4
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 5 --learning_rate 2e-5 --batch_size 64 --device cuda:0
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/Amazon/undersampled-translated-PP-train.csv --checkpoint_path models/translatedAmazon \
+    --epoch 6 --learning_rate 2e-5 --batch_size 64 --device cuda:4
+```
+
+### Mixed finetuning (translated Amazon + VLSP)
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:4
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:4
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:4
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:5
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:5
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:5
+```
+
+### Cross-lingual transfer learning (Pre-training on Amazon → fine-tune on VLSP)
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_phobert_lr2e-05_bs128_epoch1_scheduler1_nw32
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_videbertta_lr2e-05_bs64_epoch1_scheduler1_nw32
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_xlm_roberta_lr2e-05_bs64_epoch1_scheduler1_nw32
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_cafebert_lr2e-05_bs64_epoch1_scheduler1_nw32
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_vit5_lr2e-05_bs64_epoch1_scheduler1_nw32
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/AmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/Amazon_mbert_lr2e-05_bs64_epoch1_scheduler1_nw32
+```
+
+### Pre-training on translated Amazon → fine-tune on VLSP
+```bash 
+python main_model.py --action train --model_name phobert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:0 \
+    --model_path models/translatedAmazon_phobert_lr2e-05_bs64_epoch6_scheduler1_nw32
+
+python main_model.py --action train --model_name videbertta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:0 \
+    --model_path models/translatedAmazon_videbertta_lr2e-05_bs64_epoch6_scheduler1_nw32
+    
+python main_model.py --action train --model_name xlm_roberta \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:0 \
+    --model_path models/translatedAmazon_xlm_roberta_lr2e-05_bs64_epoch5_scheduler1_nw32
+    
+python main_model.py --action train --model_name cafebert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/translatedAmazon_cafebert_lr2e-05_bs64_epoch5_scheduler1_nw32
+
+python main_model.py --action train --model_name vit5 \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 10 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/translatedAmazon_vit5_lr2e-05_bs64_epoch5_scheduler1_nw32
+
+python main_model.py --action train --model_name mbert \
+    --data_path data/VLSP/PP-train.csv --checkpoint_path models/TranslatedAmazonThenVLSP \
+    --epoch 12 --learning_rate 2e-5 --batch_size 64 --device cuda:1 \
+    --model_path models/translatedAmazon_mbert_lr2e-05_bs64_epoch6_scheduler1_nw32
+```
 
 ## 📈 Performance Benchmarks
 
+### Evaluation Script
+#### Direct finetuning on Vietnamese data
+```bash
+python main_model.py --action test --model_name phobert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_phobert_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name videbertta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_videbertta_lr1e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name xlm_roberta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_xlm_roberta_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name vit5 \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_vit5_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name mbert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP_mbert_lr2e-05_bs64_epoch12_scheduler1_nw32
+```
+
+#### Pre-training on translated Amazon → fine-tune on VLSP
+```bash
+python main_model.py --action test --model_name phobert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_phobert_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name videbertta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_videbertta_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name xlm_roberta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_xlm_roberta_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name vit5 \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_vit5_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name mbert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/TranslatedAmazonThenVLSP_mbert_lr2e-05_bs64_epoch12_scheduler1_nw32
+```
+
+#### Mixed finetuning (translated Amazon + VLSP)
+```bash
+python main_model.py --action test --model_name phobert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_phobert_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name videbertta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_videbertta_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name xlm_roberta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_xlm_roberta_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name vit5 \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_vit5_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name mbert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/VLSP+translated-Amazon50_mbert_lr2e-05_bs64_epoch12_scheduler1_nw32
+```
+
+#### Cross-lingual transfer learning (Pre-training on Amazon → fine-tune on VLSP)
+```bash
+python main_model.py --action test --model_name phobert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_phobert_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name videbertta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_videbertta_lr2e-05_bs64_epoch12_scheduler1_nw32
+python main_model.py --action test --model_name xlm_roberta \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_xlm_roberta_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name vit5 \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_vit5_lr2e-05_bs64_epoch10_scheduler1_nw32
+python main_model.py --action test --model_name mbert \
+    --data_path data/VLSP/PP-test.csv --batch_size 64 --device cuda:0 \
+    --model_path models/AmazonThenVLSP_mbert_lr2e-05_bs64_epoch12_scheduler1_nw32
+```
+
 Based on research findings, expected performance on Vietnamese sentiment analysis:
 
-| Model | Architecture | Parameters | VLSP Accuracy | Amazon Accuracy |
-|-------|-------------|------------|---------------|-----------------|
-| **ViDeBERTa** | DeBERTaV3 | 86M | **~97.2%** | **~89.9%** |
-| **PhoBERT** | RoBERTa | 135M | ~96.8% | ~85.7% |
-| **CafeBERT** | XLM-RoBERTa+ | 270M | ~96.5% | ~87.2% |
-| **XLM-RoBERTa** | RoBERTa | 270M | ~96.3% | ~82.0% |
-| **ViT5** | T5 | 220M | ~95.8% | ~81.3% |
-| **Custom mBERT** | BERT+ | 180M | ~95.2% | ~79.5% |
 
 ## 🛠️ Installation & Setup
 
@@ -273,90 +547,24 @@ This framework supports Vietnamese sentiment analysis research. To contribute:
 
 **Note**: This framework is specifically designed for Vietnamese sentiment analysis and includes state-of-the-art Vietnamese language models. For optimal performance, ViDeBERTa is recommended for accuracy, while PhoBERT provides a good balance of performance and efficiency.
 
-```bash
-python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-train.csv --output_path data/VLSP/PP-train.csv
+<!-- ```bash
+python main_model.py --action train --model_name cafebert \
+    --data_path data/Amazon/VLSP+translated-Amazon50.csv --checkpoint_path models/VLSP+translated-Amazon50 \
+    --model_path models/VLSP+translated-Amazon50_cafebert_lr2e-05_bs64_epoch10_scheduler1_nw32 \
+    --epoch 6 --learning_rate 5e-6 --batch_size 64 --device cuda:6
 
-python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-test.csv --output_path data/VLSP/PP-test.csv
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv \
+    --model_path models/VLSP+translated-Amazon50_cafebert_lr1e-05_bs64_epoch5_scheduler1_nw32 \
+    --batch_size 64 --device cuda:6
 
-python main_data.py --action preprocess_VLSP --data texts --label labels --input_path data/VLSP/OG-dev.csv --output_path data/VLSP/PP-dev.csv
-```
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv \
+    --model_path models/VLSP+translated-Amazon50_cafebert_lr5e-06_bs64_epoch6_scheduler1_nw32 \
+    --batch_size 64 --device cuda:6
 
-## Preprocess Amazon data
-
-```bash
-python main_data.py --action preprocess_Amazon --data reviewText --label rating --input_path data/Amazon/OG-train.csv --output_path data/Amazon/PP-train.csv
-python main_data.py --action split --input_path data/Amazon/PP-train.csv --output_path data/Amazon/Split-train
-```
-
-Manually send to OpenAI batch interface.
-
-```bash
-python main_data.py --action combine --original_csv_path data/Amazon/PP-train.csv --input_path data/Amazon/Split-train --output_path data/Amazon/translated-PP-train.csv
-```
-## Other tools
-
-```bash
-python main_data.py --action undersampling --input_path data/Amazon/PP-train.csv --output_path data/Amazon/undersampled-PP-train.csv
-
-```
-
-
-## train/test/inference
-
-```bash
-python main_model.py --action train --data_path data/amaz/PP-train.csv --checkpoint_path models/VLSP --epoch 20
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 10
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 5
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 4
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 20 --use_scheduler 0
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 10 --use_scheduler 0
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 5 --use_scheduler 0
-
-python main_model.py --action train --data_path data/VLSP/PP-train.csv --checkpoint_path models/VLSP --epoch 4 --use_scheduler 0
-```
-
-```bash
-python main_model.py --action test --data_path data/VLSP/PP-test.csv --model_path models/VLSP_mBERT_lr3e-05_bs128_epoch4_scheduler1_nw32
-```
-
-# Current Experiment Variables:
-
-## Data: 
-- VLSP (dataset 1)
-- Amazon (dataset 2)
-
-## Models (Tuan Anh):
-- Custom mBert
-- PhoBERT
-- ViDeBERTa
-- XLM-RoBERTa
-- CafeBERT
-- ViT5
-
-## Ways to Finetunes (Nhat Minh): 
-
-Given Dataset X, Y, Z,... How can we fine tune a models
-- finetune on Amazon, then finetune on VLSP.
-- finetune on translated Amazon, then fintune on VLSP.
-- finetune on Amazon mix (concate then shuffle) with VLSP.
-- finetune on translated Amazon mix with VLSP.
-- 
-
-## Data Augmentation (Ngoc Toan): 
-- Undersampling
-- OverSampling
-- SMOTE
-- LLM few shot sample generation
-- Translate Dataset Amazon to Vietnamese.
-
-## Evaluation:
-- Calculate metrics when testing on VLSP test set.
-
-# TO CODE:
-- More detailed Evaluation
+python main_model.py --action test --model_name cafebert \
+    --data_path data/VLSP/PP-test.csv \
+    --model_path models/VLSP+translated-Amazon50_cafebert_lr2e-05_bs64_epoch20_scheduler1_nw32 \
+    --batch_size 64 --device cuda:6
+``` -->
